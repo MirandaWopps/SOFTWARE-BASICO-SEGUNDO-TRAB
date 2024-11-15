@@ -1,1 +1,120 @@
+15/11 - O trabalho começou antes, mas é o primeiro dia de várias que terei para focar nele. Pretendo acabar em 5 dias :) 
+
+Sei que o trabalho consiste em código, subcategorizado em: preângulo, salvar calle saved, arrumar parâmetro - eis o mais trabalhoso, - "call f", restaurar calle saved e finalizar.
+Então, começarei com uma versão assembly visando pegar objdump -d <fileassembly> de:
+
+	.data
+	.text
+	.globl f 
+	f:
+	pushq %rbp
+	movq %rsp, %rbp
+	subq $32, %rsp/*afinal calle saved podem ser 3 ponteiros(24 bytes)*/
+	
+	leave  /* finalizacao*/
+	ret
+	
+	
+lucas@fedora:~/inf1018/SOFTWARE-BASICO-SEGUNDO-TRAB$ gcc -Wall -no-pie -c a.o preangulo.s 
+gcc: warning: a.o: linker input file unused because linking not done
+gcc: error: a.o: linker input file not found: No such file or directory
+lucas@fedora:~/inf1018/SOFTWARE-BASICO-SEGUNDO-TRAB$ objdump -d preangulo.o
+
+preangulo.o:     file format elf64-x86-64
+
+
+Disassembly of section .text:
+
+0000000000000000 <main>:
+   0:	55                   	push   %rbp
+   1:	48 89 e5             	mov    %rsp,%rbp
+   4:	48 83 ec 20          	sub    $0x20,%rsp
+   8:	c9                   	leave
+   9:	c3                   	ret
+lucas@fedora:~/inf1018/SOFTWARE-BASICO-SEGUNDO-TRAB$ 
+
+Vou construir outra funcao para saber como acontecera o call, imagino que existe outra maneirra, mas tempo urge.
+
+soma1.c
+  GNU nano 7.2                        soma1.c                                   
+int soma1(int a){
+        int x = a +1;
+return x;
+
+
+}
+
+================================================= TESTE 2
+.data 
+Sf2: .string "testandostring\n"
+.text
+.globl main
+main:
+  pushq %rbp
+  movq %rsp, %rbp
+  subq $32, %rsp /*afinal calle saved podem ser 3 ponteiros(24 bytes)*/
+ 
+  movl $5, %edi
+  
+  
+  movq $Sf2, %rdi /* fist param */
+  movl $0, %eax
+  call printf
+
+  leave  /* finalizacao*/
+  ret
+
+
+lucas@fedora:~/inf1018/SOFTWARE-BASICO-SEGUNDO-TRAB$ objdump -d preangulo.s
+objdump: preangulo.s: file format not recognized
+lucas@fedora:~/inf1018/SOFTWARE-BASICO-SEGUNDO-TRAB$ objdump -d preangulo.o
+
+preangulo.o:     file format elf64-x86-64
+
+
+Disassembly of section .text:
+
+0000000000000000 <main>:
+   0:	55                   	push   %rbp
+   1:	48 89 e5             	mov    %rsp,%rbp
+   4:	48 83 ec 20          	sub    $0x20,%rsp
+   8:	bf 05 00 00 00       	mov    $0x5,%edi
+   d:	48 c7 c7 00 00 00 00 	mov    $0x0,%rdi
+  14:	b8 00 00 00 00       	mov    $0x0,%eax
+  19:	e8 00 00 00 00       	call   1e <main+0x1e>
+  1e:	c9                   	leave
+  1f:	c3                   	ret
+lucas@fedora:~/inf1018/SOFTWARE-BASICO-SEGUNDO-TRAB$ 
+================================================================================
+Ok, aprendi: 55 48 89 e5 48 83 ec 20        e8              c9 c3 
+                      preangulo         chamar endereco   finalizar
+
+Vou por isso no vetor !
+TODO: Calcular off set para as instruções no call serem offset = valor do call + rip.
+      Lembrar que esta em hexadecimal, entao preciso converter e passar o menor byte
+      para o maior.
+
+Pergunta enviada ao fórum junto de imagem para confirmação do que fazer. Farei teste TDD para garantir a funcionalidade de "preangulo" e "finalizar".
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
