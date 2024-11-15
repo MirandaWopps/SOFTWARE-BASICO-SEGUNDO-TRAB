@@ -98,6 +98,151 @@ Pergunta enviada ao fórum junto de imagem para confirmação do que fazer. Fare
 
 
 
+1st TDD a ser registrado: Código escrito
+teste.c
+#include <stdio.h>
+#include "cria_func.h"
+
+typedef int (*func_ptr)(int x);
+
+int mult(int x, int y) {
+  return x * y;
+}
+
+void dump (void *p, int n) {
+  unsigned char *p1 = p;
+  while (n--) {
+    printf("%p - %02x\n", p1, *p1);
+    p1++;
+  }
+}
+
+int main(void) {
+  DescParam params[2];
+  func_ptr f_mult;
+  int i;
+  unsigned char codigo[500];
+  
+// caracterizar parametros
+
+  params[0].tipo_val = INT_PAR; /* o primeiro parãmetro de mult é int */
+  params[0].orig_val = PARAM;   /* a nova função repassa seu parämetro */
+
+  params[1].tipo_val = INT_PAR; /* o segundo parâmetro de mult é int */
+  params[1].orig_val = FIX;     /* a nova função passa para mult a constante 10 */
+  params[1].valor.v_int = 10;
+    
+//void cria_func (void* f, DescParam params[], int n, unsigned char codigo[]){    
+    cria_func(mult, params, 2 , codigo);
+    for (int i=0; i<50 ;i++){
+      printf("%x ", codigo[i] );
+    }    	
+    dump(codigo,50);
+    
+	return 0;
+}
+
+
+cria_func.c
+void cria_func (void* f, DescParam params[], int n, unsigned char codigo[]){
+/*              Prologo
+   0:	55                   	push   %rbp
+   1:	48 89 e5             	mov    %rsp,%rbp
+   4:	48 83 ec 20          	sub    $0x20,%rsp   */
+      codigo[0] = 0x55; 
+      codigo[1] = 0x48; codigo[2] = 0x89; codigo[3] = 0xe5;
+      codigo[1] = 0x48; codigo[2] = 0x83; codigo[3] = 0xec; codigo[7] = 0x20; 
+    /*int i=0, escreve =1; 
+    while(escreve){
+      i++;
+    }*/
+    
+    codigo[8] = 0xc9;
+    codigo[9] = 0xc3;
+}
+
+Erro: 
+lucas@fedora:~/inf1018/SOFTWARE-BASICO-SEGUNDO-TRAB$ ./a
+55 48 83 ec 0 0 0 20 c9 c3 0 0 0 0 0 0 28 f2 40 2e 97 7f 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0x7ffdc87f63d0 - 55
+0x7ffdc87f63d1 - 48
+0x7ffdc87f63d2 - 83
+0x7ffdc87f63d3 - ec
+0x7ffdc87f63d4 - 00
+0x7ffdc87f63d5 - 00
+0x7ffdc87f63d6 - 00
+0x7ffdc87f63d7 - 20
+0x7ffdc87f63d8 - c9
+0x7ffdc87f63d9 - c3
+
+
+Solução:
+/* Lucas Ebrenz Fernandes Pereira 20011488 3WC */
+/* version 0.1 */
+
+//#define DEBUG // comente essa linha para desativar o modo debug.
+#include <stdio.h>
+#include "cria_func.h"
+/**
+* Cria funcoes.
+* 
+* @param f  Tem o endereco da funcao original a ser chamada pelo cod gerado.
+* @param params[] array contendo desc dos params para chamar essa func: max 3
+* @param n Qnts params estao no array params[].
+* @param codigo[] Vetor onde devera ser gravado o codigo gerado.
+* @return Essa funcao nao retorna nada.
+*/
+void cria_func (void* f, DescParam params[], int n, unsigned char codigo[]){
+/*              Prologo
+   0:	55                   	push   %rbp
+   1:	48 89 e5             	mov    %rsp,%rbp
+   4:	48 83 ec 20          	sub    $0x20,%rsp   */
+      codigo[0] = 0x55; 
+      codigo[1] = 0x48; codigo[2] = 0x89; codigo[3] = 0xe5;
+      codigo[4] = 0x48; codigo[5] = 0x83; codigo[6] = 0xec; codigo[7] = 0x20; 
+    /*int i=0, escreve =1; 
+    while(escreve){
+      i++;
+    }*/
+    
+    
+    
+    /* Finalizacao */
+    codigo[8] = 0xc9;
+    codigo[9] = 0xc3;
+}
+
+
+
+
+
+OUTPUT:
+lucas@fedora:~/inf1018/SOFTWARE-BASICO-SEGUNDO-TRAB$ ./a
+55 48 89 e5 48 83 ec 20 c9 c3 0 0 0 0 0 0 28 f2 42 5d 91 7f 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0x7ffc19727bf0 - 55
+0x7ffc19727bf1 - 48
+0x7ffc19727bf2 - 89
+0x7ffc19727bf3 - e5
+0x7ffc19727bf4 - 48
+0x7ffc19727bf5 - 83
+0x7ffc19727bf6 - ec
+0x7ffc19727bf7 - 20
+0x7ffc19727bf8 - c9
+0x7ffc19727bf9 - c3
+0x7ffc19727bfa - 00
+0x7ffc19727bfb - 00
+
+rEFATORAÇÃO: Vou deixar como está. O comentário será alterado provavelmente agora.
+
+
+
+TDD2-> Teste: 
+
+
+
+
+
+
+
+
 
 
 
