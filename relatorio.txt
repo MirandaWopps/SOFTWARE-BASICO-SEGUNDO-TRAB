@@ -233,8 +233,412 @@ lucas@fedora:~/inf1018/SOFTWARE-BASICO-SEGUNDO-TRAB$ ./a
 rEFATORAÇÃO: Vou deixar como está. O comentário será alterado provavelmente agora.
 
 
+16/11
+Preciso descobrir o cÓdigo de registradores dos 3 primeiros parametros!
+RdI(d7)       RsI(d6)    RDX(c2)
+edi()         esi(       edx(  
 
-TDD2-> Teste: 
+Descobri usando objdump -d <obj.o> e trocando no arq assembly os registradores antes com gcc -c <arq.s>.
+
+0000000000000000 <main>:
+   0:	55                   	push   %rbp
+   1:	48 89 e5             	mov    %rsp,%rbp
+   4:	48 83 ec 20          	sub    $0x20,%rsp
+   8:	bf 05 00 00 00       	mov    $0x5,%edi
+   d:	48 c7 c7 00 00 00 00 	mov    $0x0,%rdi
+  14:	b8 00 00 00 00       	mov    $0x0,%eax
+  19:	ff d7                	call   *%rdi
+  1b:	ff c7                	inc    %edi
+  1d:	ff c6                	inc    %esi
+  1f:	ff c2                	inc    %edx
+  21:	48 ff c7             	inc    %rdi
+  24:	48 ff c6             	inc    %rsi
+  27:	48 ff c2             	inc    %rdx
+  2a:	89 ff                	mov    %edi,%edi
+  2c:	89 f6                	mov    %esi,%esi
+  2e:	89 d2                	mov    %edx,%edx
+  30:	83 ef 05             	sub    $0x5,%edi
+  33:	48 89 ff             	mov    %rdi,%rdi
+  36:	48 89 f6             	mov    %rsi,%rsi
+  39:	48 89 d2             	mov    %rdx,%rdx
+  3c:	c9                   	leave
+  3d:	c3                   	ret
+
+
+Comecei a montar a funçÃo ! pelo menos hoje quero ter o protÓtipo que resolve o primeiro parametro !
+    if (params[0].orig_val = PARAM  )   {
+      if (params[0].tipo_val == INT_PAR){ // int param: reg de 32, logo, eax
+       codigo[8] = 0x89; // movl %edi,%edi 
+       codigo[9] = 0xff; // 
+       i+=2;
+      }else{ // PTR_ PAR pede 64 bits
+       scodigo[8] = 0x48; // movq %rdi, %rdi
+       codigo[9] = 0x89;
+       codigo[10]= 0xff;
+       i+=3;
+      }
+
+Essas sÃo as instruçÕes para montar FIX !
+
+  2a:	bf 05 00 00 00       	mov    $0x5,%edi
+  2f:	be 05 00 00 00       	mov    $0x5,%esi
+  34:	ba 05 00 00 00       	mov    $0x5,%edx
+  39:	83 ef 05             	sub    $0x5,%edi
+  3c:	48 c7 c7 05 00 00 00 	mov    $0x5,%rdi
+  43:	48 c7 c6 05 00 00 00 	mov    $0x5,%rsi
+  4a:	48 c7 c2 05 00 00 00 	mov    $0x5,%rdx
+
+
+21:50 Vou dormir e me empenhar 2x mais amanhÃ ! EU termino amanhÃ, estou sentindo isso !
+https://youtu.be/APBZBeR7F1U?si=0LjUALEetT4OCd4D
+ 
+ 
+TDD2-> Teste do first param:
+==========================================================================
+/* Lucas Ebrenz Fernandes Pereira 20011488 3WC */
+/* version 0.1 */
+
+//#define DEBUG // comente essa linha para desativar o modo debug.
+#include <stdio.h>
+#include "cria_func.h"
+/**
+* Cria funcoes.
+* 
+* @param f  Tem o endereco da funcao original a ser chamada pelo cod gerado.
+* @param params[] array contendo desc dos params para chamar essa func: max 3
+* @param n Qnts params estao no array params[].
+* @param codigo[] Vetor onde devera ser gravado o codigo gerado.
+* @return Essa funcao nao retorna nada.
+*/
+void cria_func (void* f, DescParam params[], int n, unsigned char codigo[]){
+/*              Prologo
+   0:	55                   	push   %rbp
+   1:	48 89 e5             	mov    %rsp,%rbp
+   4:	48 83 ec 20          	sub    $0x20,%rsp   */
+      codigo[0] = 0x55; 
+      codigo[1] = 0x48; codigo[2] = 0x89; codigo[3] = 0xe5;
+      codigo[4] = 0x48; codigo[5] = 0x83; codigo[6] = 0xec; codigo[7] = 0x20; 
+      
+      
+    int i=7; // contador de indices de 'codigo'
+    /*int i=0, escreve =1; 
+    while(escreve){
+      i++;
+    }*/
+    /*ARRUMAR 1st PARAMETRO*/
+  if (n!=0){ // se existe algum parametro
+    if (params[0].orig_val = PARAM  )   {
+      if (params[0].tipo_val == INT_PAR){ // int param: reg de 32, logo, eax
+        codigo[8] = 0x89; // movl %edi,%edi 
+        codigo[9] = 0xff; // 
+        i+=2;
+      }else{ // PTR_ PAR pede 64 bits
+        codigo[8] = 0x48; // movq %rdi, %rdi
+        codigo[9] = 0x89;
+        codigo[10]= 0xff;
+        i+=3;
+      }
+      
+    } else if (params[0].orig_val = FIX){// VALOR FIXO A SER PASSADO !
+        if (params[0].tipo_val == INT_PAR){ // int param: reg de 32, logo, eax
+          codigo[8] = 0xbf; // movl $0x5,%edi
+          codigo[9] = (unsigned char)params[0].valor.v_int; // 2
+          codigo[10] = 0x00; // 3
+          codigo[11] = 0x00; // 4
+          codigo[12] = 0x00; //5
+          i+=5;
+        }else{ // PTR_ PAR pede 64 bits
+          codigo[8] = 0x48; // movq $0x5,%rdi
+          codigo[9] = 0xc7; // 2
+          codigo[10]= 0xc7; // 3
+          codigo[11] = (unsigned char)params[0].valor.v_ptr;
+          codigo[12]= 0x00; // 5
+          codigo[13] = 0x00; // 6
+          codigo[14]= 0x00; // 7
+          i+=7;
+        }
+        
+    }
+    else { // IND- endereco
+          if (params[0].tipo_val == INT_PAR){ // int: 32bits, logo, eax
+          codigo[8] = 0xbf; // movl $0x5,%edi
+          codigo[9] = (unsigned char)params[0].valor.v_int; // 2
+          codigo[10]= 0x00; // 3
+          codigo[11]= 0x00; // 4
+          codigo[12]= 0x00; //5
+          i+=5;
+        }else{ // PTR_ PAR pede 64 bits
+          codigo[8] = 0x48; // movq $0x5,%rdi
+          codigo[9] = 0xc7; // 2
+          codigo[10]= 0xc7; // 3
+          codigo[11]= (unsigned char)params[0].valor.v_ptr;
+          codigo[12]= 0x00; // 5
+          codigo[13]= 0x00; // 6
+          codigo[14]= 0x00; // 7
+          i+=7;
+        }
+    }// fim ind
+  }//fim first param
+   
+   
+   /*
+  /*ARRUMAR 2st PARAMETRO*
+  if (n<2){ // se existe algum parametro 
+    if (params[2].orig_val = PARAM  )   { // CASO REPASSSE O PARAM ('PARAM')
+       if (params[2].tipo_val == INT_PAR){ // int param: reg de 32, logo, eax
+          codigo[8] = 0x89; // movl %esi,%esi 
+          codigo[9] = 0xf6; // 
+          i+=2;
+       } else{ // PTR_ PAR pede 64 bits
+          codigo[8] = 0x48; // movq %rsi, %rsi
+          codigo[9] = 0x89;
+          codigo[10]= 0xf6;
+          i+=3;
+      }
+      
+    }
+  }  
+    
+    
+    /*ARRUMAR 3st PARAMETRO
+  if (n<3){ // se existe algum parametro 
+    if (params[2].orig_val = PARAM  )   { // CASO REPASSSE O PARAM ('PARAM')
+       if (params[2].tipo_val == INT_PAR){ // int param: reg de 32, logo, eax
+          codigo[8] = 0x89; // movl %edx,%edx 
+          codigo[9] = 0xd2; // 
+          i+=2;
+       } else{ // PTR_ PAR pede 64 bits
+          codigo[8] = 0x48; // movq %rdx, %rdx
+          codigo[9] = 0x89; 
+          codigo[10]= 0xd2;
+          i+=3;
+      }
+      
+    } else { // 
+        
+        
+    }
+    
+  }  */
+    
+    
+    /* CALL F */
+    codigo[i+1]= 0xff ;
+    codigo[i+2]= 0xd0;
+    
+    /* Finalizacao */
+    codigo[i+3] = 0xc9;
+    codigo[i+4] = 0xc3;
+}
+======================================================
+#include <stdio.h>
+#include "cria_func.h"
+
+typedef int (*func_ptr)(int x);
+
+int mult(int x, int y) {
+  return x * y;
+}
+
+void dump (void *p, int n) {
+  unsigned char *p1 = p;
+  while (n--) {
+    printf("%p - %02x\n", p1, *p1);
+    p1++;
+  }
+}
+
+int main (void) {
+  DescParam params[2];
+  func_ptr f_mult;
+  int i;
+  unsigned char codigo[500];
+
+  params[0].tipo_val = INT_PAR; /* o primeiro parãmetro de mult é int */
+  params[0].orig_val = FIX;   /* a nova função repassa seu parämetro */
+  params[0].valor.v_int = 10;
+
+/*
+  params[1].tipo_val = INT_PAR; /* o segundo parâmetro de mult é int *
+  params[1].orig_val = FIX;     /* a nova função passa para mult a constante 10 *
+  params[1].valor.v_int = 10;
+*/
+  cria_func (mult, params, 2, codigo);
+  f_mult = (func_ptr) codigo;   
+
+  for (int j=0; j<50; j++){
+    printf("%x ", codigo[j]);
+  }
+
+/*
+  for (i = 1; i <=10; i++) {
+    printf("%d\n", f_mult(i)); /* a nova função só recebe um argumento 
+  }*/
+
+  return 0;
+}
+=============================================================================
+lucas@fedora:~/inf1018/SOFTWARE-BASICO-SEGUNDO-TRAB$ ./a
+55 48 89 e5 48 83 ec 20 bf 0 0 0 0 ff d0 c9 c3 2 4f 63 b3 7f 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+
+Resultado diferente do esperado porque depois de bf tem quatro zeros. O problema é não ter posto "params[0].valor.v_int = 10;". VOu reprogramar colocando essa linha perto das definições do parametro no "teste.c" .
+
+Resultado:  
+lucas@fedora:~/inf1018/SOFTWARE-BASICO-SEGUNDO-TRAB$ ./a
+entrou aq
+55 48 89 e5 48 83 ec 20 bf a 0 0 0 ff d0 c9 c3 d2 10 e5 4c 7f 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 lucas@fedora:~/inf1018/SOFTWARE-BASICO-SEGUNDO-TRAB$ 
+---
+int_par em "params[0].tipo_val = INT_PAR; /* o primeiro parãmetro de mult é int */"
+lucas@fedora:~/inf1018/SOFTWARE-BASICO-SEGUNDO-TRAB$ ./a
+entrou aq
+55 48 89 e5 48 83 ec 20 bf 14 0 0 0 ff d0 c9 c3 d2 67 56 4d 7f 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+
+ptr_param em "params[0].tipo_val = PTR_PAR; /* o primeiro parãmetro de mult é int */"
+lucas@fedora:~/inf1018/SOFTWARE-BASICO-SEGUNDO-TRAB$ ./a
+entrou (first param)FIX
+55 48 89 e5 48 83 ec 20 48 c7 c7 14 0 0 0 ff d0 c9 c3 dd 35 7f 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 l
+
+Ambos os resultados dispensaram refatoração. 
+
+Próximo: ind
+cria_func.c
+else { // IND- endereco
+          if (params[0].tipo_val == INT_PAR){ // int: 32bits, logo, eax
+          codigo[8] = 0xbf; // movl $0x5,%edi
+          codigo[9] = (unsigned char)params[0].valor.v_int; // 2
+          codigo[10]= 0x00; // 3
+          codigo[11]= 0x00; // 4
+          codigo[12]= 0x00; //5
+          i+=5;
+        }else{ // PTR_ PAR pede 64 bits
+          codigo[8] = 0x48; // movq $0x5,%rdi
+          codigo[9] = 0xc7; // 2
+          codigo[10]= 0xc7; // 3
+          codigo[11]= (unsigned char)params[0].valor.v_ptr;
+          codigo[12]= 0x00; // 5
+          codigo[13]= 0x00; // 6
+          codigo[14]= 0x00; // 7
+          i+=7;
+        }
+        #ifdef DEBUG
+        printf("entrou (first param)IND\n");
+        #endif
+    }// fim ind
+  }//fim first param
+
+testa.c ===========================================================================
+#include <stdio.h>
+#include "cria_func.h"
+
+char fixa[] = "asd";
+
+typedef int (*func_ptr)(int x);
+
+int mult(int x, int y) {
+  return x * y;
+}
+
+void dump (void *p, int n) {
+  unsigned char *p1 = p;
+  while (n--) {
+    printf("%p - %02x\n", p1, *p1);
+    p1++;
+  }
+}
+
+int main (void) {
+  DescParam params[2];
+  func_ptr f_mult;
+  int i;
+  unsigned char codigo[500];
+
+  params[0].tipo_val = INT_PAR; /* o primeiro parãmetro de mult é int */
+  params[0].orig_val = IND;   /* a nova função repassa seu parämetro */
+  params[0].valor.v_ptr = &fixa;
+
+
+/*
+  params[1].tipo_val = INT_PAR; /* o segundo parâmetro de mult é int *
+  params[1].orig_val = FIX;     /* a nova função passa para mult a constante 10 *
+  params[1].valor.v_int = 10;
+*/
+  cria_func (mult, params, 2, codigo);
+  f_mult = (func_ptr) codigo;   
+
+  for (int j=0; j<50; j++){
+    printf("%x ", codigo[j]);
+  }
+
+/*
+  for (i = 1; i <=10; i++) {
+    printf("%d\n", f_mult(i)); /* a nova função só recebe um argumento 
+  }*/
+
+  return 0;
+}
+
+Resultado:
+lucas@fedora:~/inf1018/SOFTWARE-BASICO-SEGUNDO-TRAB$ ./a
+entrou (first param)FIX
+55 48 89 e5 48 83 ec 20 48 c7 c7 14 0 0 0 ff d0 c9 c3 fa 7d 7f 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+
+
+COrreção os IFS estavam comparadando com "=" ao invés de "=="
+
+Agora: lucas@fedora:~/inf1018/SOFTWARE-BASICO-SEGUNDO-TRAB$ ./a
+entrou (first param)IND
+55 48 89 e5 48 83 ec 20 bf 14 0 0 0 ff d0 c9 c3 92 de ff 7b 7f 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 lucas@fedora:~/inf1018/SOFTWARE-BASICO-SEGUNDO-TRAB$ 
+
+Refatoração: O código está ok.
+
+Testemos  PTR_PAR ao invés de INT_PAR.
+lucas@fedora:~/inf1018/SOFTWARE-BASICO-SEGUNDO-TRAB$ ./a
+entrou (first param)IND
+55 48 89 e5 48 83 ec 20 48 c7 c7 14 0 0 0 ff d0 c9 c3 e dd 7f 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 lucas@fedora:~/inf1018/SOFTWARE-BASICO-SEGUNDO-TRAB$ 
+Refatoração: nada alterado.
+
+PARAM testing ! 
+int main (void) {
+  DescParam params[2];
+  func_ptr f_mult;
+  //int i; // fdc desconectar
+  unsigned char codigo[500];
+
+  params[0].tipo_val = PTR_PAR; /* o primeiro parãmetro de mult é int */
+  params[0].orig_val = PARAM;   /* a nova função repassa seu parämetro */
+  //params[0].valor.v_ptr = &fixa;
+
+
+/*
+  params[1].tipo_val = INT_PAR; /* o segundo parâmetro de mult é int *
+  params[1].orig_val = FIX;     /* a nova função passa para mult a constante 10 *
+  params[1].valor.v_int = 10;
+*/
+  cria_func (mult, params, 2, codigo);
+  f_mult = (func_ptr) codigo;   
+
+  for (int j=0; j<50; j++){
+    printf("%x ", codigo[j]);
+  }
+
+/*
+  for (int i = 1; i <=10; i++) {
+    printf("%d\n", f_mult(i));// a nova função só recebe um argumento 
+  }*/
+
+  return 0;
+}
+
+
+lucas@fedora:~/inf1018/SOFTWARE-BASICO-SEGUNDO-TRAB$ ./a
+entrou (first param)PARAM
+55 48 89 e5 48 83 ec 20 48 89 ff ff d0 c9 c3 0 28 92 b1 64 8b 7f 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 lucas@fedora:~/inf1018/SOFTWARE-BASICO-SEGUNDO-TRAB$ 
+
+
+Agora quero o ptr
+lucas@fedora:~/inf1018/SOFTWARE-BASICO-SEGUNDO-TRAB$ ./a
+entrou (first param)PARAM
+55 48 89 e5 48 83 ec 20 89 ff ff d0 c9 c3 0 0 28 f2 2a 12 e2 7f 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 lucas@fedora:~/inf1018/SOFTWARE-BASICO-Slucas@fedora:~/inf1018/SOFTWARE-BASICO-SEGUNDO-TRAB$ 
 
 
 
@@ -242,6 +646,185 @@ TDD2-> Teste:
 
 
 
+
+
+Fazendo segundo parametro ! ps: agora reli parte do relatorio no enunciado e percebi a palavra "pequeno". Desculpe pelo tamanho, vou procurar deixar ele mais breve em diante.
+//ARRUMAR 2st PARAMETRO
+  if (n<2){ // se existe algum parametro 
+    if (params[1].orig_val = PARAM ){ // CASO REPASSSE O PARAM ('PARAM')
+       if (params[1].tipo_val == INT_PAR){ // int param: reg de 32, logo, eax
+          codigo[i++] = 0x89; // movl %esi,%esi 
+          codigo[i++] = 0xf6; // 
+       } else{ // PTR_ PAR pede 64 bits
+          codigo[i++] = 0x48; // movq %rsi, %rsi
+          codigo[i++] = 0x89;
+          codigo[i++]= 0xf6;
+      }
+      #ifdef DEBUG
+      printf("(SECOND param)param\n");
+      #endif
+    }
+    }// fim param 
+    
+    } else if (params[1].orig_val == FIX){// VALOR FIXO A SER PASSADO !
+        if (params[1].tipo_val == INT_PAR){ // int param: reg de 32, logo, eax
+          codigo[i++] = 0xbe; // movl $0x5,%edi
+          codigo[i++] = (unsigned char)params[0].valor.v_int; // 2
+          codigo[i++] = 0x00; // 3
+          codigo[i++] = 0x00; // 4
+          codigo[i++] = 0x00; //5
+        }else{ // PTR_ PAR pede 64 bits
+          codigo[i++] = 0x48; // movq $0x5,%rdi
+          codigo[i++] = 0xc7; // 2
+          codigo[i++]= 0xc6; // 3
+          codigo[i++] = (unsigned char)params[0].valor.v_ptr;
+          codigo[i++]= 0x00; // 5
+          codigo[i++] = 0x00; // 6
+          codigo[i++]= 0x00; // 7
+        }
+        #ifdef DEBUG
+        printf("(SECOND param)FIX\n");
+        #endif
+    }
+    
+    else { // IND- endereco
+       if (params[0].tipo_val == INT_PAR){ // int: 32bits, logo, eax
+          codigo[8] = 0xbe; // movl $0x5,%edi
+          codigo[9] = (unsigned char)params[0].valor.v_int; // 2
+          codigo[10]= 0x00; // 3
+          codigo[11]= 0x00; // 4
+          codigo[12]= 0x00; //5
+          i+=5;
+        }else{ // PTR_ PAR pede 64 bits
+          codigo[8] = 0x48; // movq $0x5,%rdi
+          codigo[9] = 0xc7; // 2
+          codigo[10]= 0xc6; // 3
+          codigo[11]= (unsigned char)params[0].valor.v_ptr;
+          codigo[12]= 0x00; // 5
+          codigo[13]= 0x00; // 6
+          codigo[14]= 0x00; // 7
+          i+=7;
+        }
+        #ifdef DEBUG
+        printf("(SECOND param)IND\n");
+        #endif
+    }// fim ind
+  }//fim segundo param
+  
+  
+
+  TDD
+  Teste: Tentei executar um novo cÓdigo e deu diferente do esperado. 
+  Erro: ELe nÃo esta amarrando o segundo parametro.
+  Refaz: O problema era o if(n<2). Ajeitei para if(n<3) e agora roda!
+  OK !
+  RefatoraçÃo: Nenhuma refatoraçÃo necessÁria.
+  
+  
+  Teste de PARAM no 2 parametro: (PTR) Erro, então descobri que precisava usar i++; e não acrescentar no index assim: vetor[i++]. Isso escrevia o novo byte em cima do novo byte. O erro foi reparado e a refatoração feita foi por i++ antes das linhas.
+
+  Teste de FIX   
+    ptr(Ok) Erro no começo porque a linha de coduigo envolvia o valor presente no parametro 0 do vetor ao invés do parametro ID 1. Concertei e refatorei as outras linhas.
+    int(OK) 
+params[1].tipo_val = INT_PAR; // o segundo parâmetro de mult é int 
+  params[1].orig_val = FIX;     // a nova função passa para mult a constante 10 
+  params[1].valor.v_int = 10; // ISSO NA TESTA.C
+
+lucas@fedora:~/inf1018/SOFTWARE-BASICO-SEGUNDO-TRAB$ ./a
+entrou (first param)PARAM
+CAPTOUU EXISTENCIA DE 2 PARAMETROS
+(SECOND param)FIX
+55 48 89 e5 48 83 ec 20 48 89 ff be a 0 0 0 ff d0 c9 c3 11 7f 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 lucas@fedora:~/inf1018/SOFTWARE-BASICO-SEGUNDO-TRAB$ 
+  
+  Teste de IND
+    ptr(OK)
+    
+  params[1].tipo_val = PTR_PAR; // o segundo parâmetro de mult é int 
+  params[1].orig_val = IND;     // a nova função passa para mult a constante 10 
+  params[1].valor.v_INT = &fixa;
+    ISSO NAO FUNCIONA, ENTÃO, V_INT PREICSA SER V_PTR, logo, apos a modificação rodou e estou pensando em por quando for v_int e IND para sempre rodar com registrador de 8 bytes. Fui comer manga e decidi a instrução assemby sempre ser 8 bytes para IND.
+    int(Resolvido, será aplicado o que foi discutido acima.) 
+Refatoração: feita no primeiro param também! 
+Teste feito com o primeiro tratamento de parametro:
+  params[0].tipo_val = PTR_PAR; /* o primeiro parãmetro de mult é int */
+  params[0].orig_val = IND;   /* a nova função repassa seu parämetro */
+  params[0].valor.v_ptr = &fixa;
+
+  params[1].tipo_val = INT_PAR; // o segundo parâmetro de mult é int 
+  params[1].orig_val = IND;     // a nova função passa para mult a constante 10 
+  params[1].valor.v_ptr = &fixa;
+
+lucas@fedora:~/inf1018/SOFTWARE-BASICO-SEGUNDO-TRAB$ ./a
+entrou (first param)IND
+CAPTOUU EXISTENCIA DE 2 PARAMETROS
+(SECOND param)IND
+55 48 89 e5 48 83 ec 20 48 c7 c7 14 0 0 0 48 c7 c6 14 0 0 0 ff d0 c9 c3 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 lucas@fedora:~/inf1018/SOFTWARE-BASICO-Slucas@fedora:~/inf1018/SOFTWARE-BASICO-SEGUNDO-TRAB$ 
+
+
+
+
+OK, faltam 3 itens para este relatorio: garantir a escrita de codigo do terceiro parametro, o assembly exeecutar conforme mostrado o exemplo no enunciado e uma função para escrever endereços. Vamos ao terceiro parametro !
+TERCEIRO PARÂMETRO TESTING !
+PARAM (int) (ptr) Houve um erro testando ptr porque não indexei decentemente, vou colocar index 2 onde está 1 no snipet abaixo e possivelmente outras partes que darão erro.
+  if (params[2].orig_val == PARAM ){ // CASO REPASSSE O PARAM ('PARAM')
+          if (params[1].tipo_val == INT_PAR){ // int param: reg de 32, logo, eax
+              i++; codigo[i]= 0x89; // movl %esi,%esi 
+              i++; codigo[i]= 0xd2; // 
+           } else{ // PTR_ PAR pede 64 bits
+              i++; codigo[i]= 0x48; // movq %rsi, %rsi
+              i++; codigo[i]= 0x89;
+              i++; codigo[i]= 0xd2;
+           }
+        #ifdef DEBUG
+        printf("(THIRD param)PARAM\n");
+        #endif
+        }// fim PARAM 
+
+A parte int está ok e ptr também pq vi o output e estaá de acordo com o esperado. Na refatoração aproveitei para mudar index de  1 para 2 na linha de baixo.
+
+ps: ja estou no dia 18 e nao sei quando comecei a escrever hoje nesse relatorio
+FIX   (int) (ptr)
+Assim testei o ptr
+  params[2].tipo_val = PTR_PAR; // o segundo parâmetro de mult é int 
+  params[2].orig_val = FIX;     // a nova função passa para mult a constante 10 
+  params[2].valor.v_ptr = &fixa;
+-            -              -                  -
+        }else{ // PTR_ PAR pede 64 bits
+            i++; codigo[i] = 0x48; // movq $0x5,%rdi
+            i++; codigo[i] = 0xc7; // 2
+            i++; codigo[i]= 0xc2; // 3
+            i++; codigo[i] = (unsigned char)params[2].valor.v_ptr;
+            i++; codigo[i]= 0x00; // 5
+            i++; codigo[i] = 0x00; // 6
+           i++; codigo[i]= 0x00; // 7
+        }
+-            -              -                  -
+lucas@fedora:~/inf1018/SOFTWARE-BASICO-SEGUNDO-TRAB$ ./a
+entrou (first param)PARAM
+CAPTOUU EXISTENCIA DE 2 PARAMETROS
+(SECOND param)IND
+CAPTOUU EXISTENCIA DE 3 PARAMETROS
+(THIRD param)FIX
+55 48 89 e5 48 83 ec 20 48 89 ff 48 c7 c6 14 0 0 0 48 c7 c2 14 0 0 0 ff d0 c9 c3 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 lucas@fedora:~/inf1018/SOFTWARE-BASICO-SEGUNDO-TRAB$ 
+-            -              -                  -
+IND(8 bytes)
+MUdando de int ou ptr na "testa.c" dá na mesma:
+  params[2].tipo_val = INT_PAR; // o segundo parâmetro de mult é int 
+  params[2].orig_val = IND;     // a nova função passa para mult a constante 10 
+  params[2].valor.v_ptr = &fixa;
+
+55 48 89 e5 48 83 ec 20 48 89 ff 48 c7 c6 14 0 0 0 48 c7 c2 14 0 0 0 ff d0 c9 c3 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+55 48 89 e5 48 83 ec 20 48 89 ff 48 c7 c6 14 0 0 0 48 c7 c2 14 0 0 0 ff d0 c9 c3 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+
+
+Vou refatorar a parte IND do primeiro param.
+TODO: FUNCAO QUE JOGA ENDERECO EM UM VETOR DE 4 BYTES e sequenciar esses bytes na escrita de "codigo[]".
+
+TODO: verificar se funciona o jeito com
+
+Refatoração: if (n>1) e if (n>2) para conseguirmos limitar operacoes por params e teste aplicado. Ok ! Outra refatoração desnecessária. 
+
+Vou focar no outro trabalho ~ 19:43 18/11/2023
 
 
 
