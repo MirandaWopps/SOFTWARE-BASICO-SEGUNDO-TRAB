@@ -78,7 +78,6 @@ void cria_func (void* f, DescParam params[], int n, unsigned char codigo[]){
           codigo[13]= 0x00; // 6
           codigo[14]= 0x00; // 7
           i+=7;
-        
         #ifdef DEBUG
         printf("entrou (first param)IND\n");
         #endif
@@ -92,7 +91,7 @@ void cria_func (void* f, DescParam params[], int n, unsigned char codigo[]){
   
   
   //ARRUMAR 2st PARAMETRO
-  if (n<3){ // se existe algum parametro 
+  if (n>1){ // se existe algum parametro 
   #ifdef DEBUG
   printf("CAPTOUU EXISTENCIA DE 2 PARAMETROS\n");
   #endif
@@ -147,67 +146,60 @@ void cria_func (void* f, DescParam params[], int n, unsigned char codigo[]){
         #endif
     }// fim ind
   }//fim segundo param
-  
-  
-  
-  
-  
-  
+
     
     
-        //ARRUMAR 3st PARAMETRO
-  if (n<4){ // se existe algum parametro 
-    #ifdef DEBUG
-    printf("CAPTOUU EXISTENCIA DE 2 PARAMETROS\n");
-    #endif
+  //ARRUMAR 3st PARAMETRO
+  if (n>2){ // se existe algum parametro 
+      #ifdef DEBUG
+      printf("CAPTOUU EXISTENCIA DE 3 PARAMETROS\n");
+      #endif
       if (params[2].orig_val == PARAM ){ // CASO REPASSSE O PARAM ('PARAM')
-          if (params[1].tipo_val == INT_PAR){ // int param: reg de 32, logo, eax
+          if (params[2].tipo_val == INT_PAR){ // int param: reg de 32, logo, eax
               i++; codigo[i]= 0x89; // movl %esi,%esi 
               i++; codigo[i]= 0xd2; // 
            } else{ // PTR_ PAR pede 64 bits
-              i++; codigo[i]= 0x48; // movq %rsi, %rsi
+              i++; codigo[i]= 0x48; // movq 
               i++; codigo[i]= 0x89;
               i++; codigo[i]= 0xd2;
            }
-      #ifdef DEBUG
-      printf("(SECOND param)PARAM\n");
-      #endif
-    }// fim PARAM 
+        #ifdef DEBUG
+        printf("(THIRD param)PARAM\n");
+        #endif
+        }// fim PARAM 
     
-    else if (params[2].orig_val == FIX){// VALOR FIXO A SER PASSADO !
-        if (params[1].tipo_val == INT_PAR){ // int param: reg de 32, logo, eax
-          i++; codigo[i] = 0xba; // movl $0x5,%edi
-          i++; codigo[i] = (unsigned char)params[1].valor.v_int; // 2
-          i++; codigo[i] = 0x00; // 3
-          i++; codigo[i] = 0x00; // 4
-          i++; codigo[i] = 0x00; //5
+      else if (params[2].orig_val == FIX){// VALOR FIXO A SER PASSADO !
+          if (params[2].tipo_val == INT_PAR){ // int param: reg de 32, logo, eax
+            i++; codigo[i] = 0xba; // movl $0x5,%edi
+            i++; codigo[i] = (unsigned char)params[2].valor.v_int; // 2
+            i++; codigo[i] = 0x00; // 3
+            i++; codigo[i] = 0x00; // 4
+            i++; codigo[i] = 0x00; //5
         }else{ // PTR_ PAR pede 64 bits
-          i++; codigo[i] = 0x48; // movq $0x5,%rdi
-          i++; codigo[i] = 0xc7; // 2
-          i++; codigo[i]= 0xc2; // 3
-          i++; codigo[i] = (unsigned char)params[1].valor.v_ptr;
-          i++; codigo[i]= 0x00; // 5
-          i++; codigo[i] = 0x00; // 6
-          i++; codigo[i]= 0x00; // 7
+            i++; codigo[i] = 0x48; // movq $0x5,%rdi
+            i++; codigo[i] = 0xc7; // 2
+            i++; codigo[i]= 0xc2; // 3
+            i++; codigo[i] = (unsigned char)params[2].valor.v_ptr;
+            i++; codigo[i]= 0x00; // 5
+            i++; codigo[i] = 0x00; // 6
+           i++; codigo[i]= 0x00; // 7
         }
         #ifdef DEBUG
-        printf("(SECOND param)FIX\n");
+        printf("(THIRD param)FIX\n");
         #endif
     }// fim FIX
     
     else { // IND- endereco
-        
    // PTR_ PAR pede 64 bits - estamos excluindo o outro caso
           i++; codigo[i]= 0x48; // movq $0x5,%rdi
           i++; codigo[i]= 0xc7; // 2
           i++; codigo[i]= 0xc2; // 3
-          i++; codigo[i]= (unsigned char)params[1].valor.v_ptr;// e uma union
+          i++; codigo[i]= (unsigned char)params[2].valor.v_ptr;// e uma union
           i++; codigo[i]= 0x00; // 5
           i++; codigo[i]= 0x00; // 6
           i++; codigo[i]= 0x00; // 7
-        
         #ifdef DEBUG
-        printf("(SECOND param)IND\n");
+        printf("(THIRD param)IND\n");
         #endif
     }// fim ind
     
